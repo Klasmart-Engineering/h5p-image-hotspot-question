@@ -66,6 +66,12 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
     this.maxScore = 1;
 
     /**
+     * State for not accepting clicks
+     * @type {boolean}
+     */
+    this.disabled = false;
+
+    /**
      * Keeps track of parameters
      */
     this.params = $.extend(true, {}, defaults, params);
@@ -186,6 +192,10 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
     var self = this;
 
     this.$imageWrapper.click(function (mouseEvent) {
+      if (self.disabled) {
+        return false;
+      }
+
       // Create new hotspot feedback
       self.createHotspotFeedback($(this), mouseEvent);
     });
@@ -216,6 +226,9 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
       width: hotspot.computedSettings.width + '%',
       height: hotspot.computedSettings.height + '%'
     }).click(function (mouseEvent) {
+      if (self.disabled) {
+        return false;
+      }
 
       // Create new hotspot feedback
       self.createHotspotFeedback($(this), mouseEvent, hotspot);
@@ -425,6 +438,7 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
    */
   ImageHotspotQuestion.prototype.showSolutions = function () {
     this.showCorrectHotspot();
+    this.disabled = true;
   };
 
   /**
@@ -444,6 +458,8 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
 
     // Clear feedback
     this.removeFeedback();
+
+    this.disabled = false;
   };
 
   /**
