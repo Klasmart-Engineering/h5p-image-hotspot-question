@@ -61,6 +61,10 @@
                 {
                   "label": "Besedilo za gumb \"Zapri\"",
                   "default": "Zapri"
+                },
+                {
+                  "label": "Default message for correct hotspots",
+                  "default": "Correct!"
                 }
               ]
             }
