@@ -61,6 +61,10 @@
                 {
                   "label": "Texto para o botón pechar",
                   "default": "Pechar"
+                },
+                {
+                  "label": "Default message for correct hotspots",
+                  "default": "Correct!"
                 }
               ]
             }
