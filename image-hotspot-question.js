@@ -329,7 +329,7 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
             that.$wrapper.get(0).closest('.h5p-container')
           );
         }
-      }, 750); // Allow results to display
+      }, 1000); // Allow results to display
     }
 
     // Trigger xAPI completed event
