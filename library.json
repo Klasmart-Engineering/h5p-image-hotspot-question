@@ -3,8 +3,8 @@
   "description": "A question that is answered by pressing the correct hotspot.",
   "contentType": "Question",
   "majorVersion": 1,
-  "minorVersion": 8,
-  "patchVersion": 12,
+  "minorVersion": 9,
+  "patchVersion": 0,
   "runnable": 1,
   "author": "Joubel",
   "license": "MIT",
@@ -37,9 +37,14 @@
   ],
   "preloadedDependencies": [
     {
+      "machineName": "FontKidsLoop",
+      "majorVersion": 1,
+      "minorVersion": 0
+    },
+    {
       "machineName": "H5P.Question",
       "majorVersion": 1,
-      "minorVersion": 4
+      "minorVersion": 5
     }
   ]
 }
