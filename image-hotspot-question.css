@@ -94,6 +94,8 @@
   width: 100%;
   text-align: center;
   line-height: 32px;
+  height: 32px; /* Workaround for KidsLoopLive replication problems */
+  width: 32px; /* Workaround for KidsLoopLive replication problems */
 }
 
 /* Correct feedback */
