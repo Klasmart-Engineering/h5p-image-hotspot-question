@@ -115,6 +115,12 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
       this.previousState = contentData.previousState;
     }
 
+    /**
+     * Store last click position and data.
+     * @type {object}
+     */
+    this.lastPosition = {};
+
     // Register resize listener with h5p
     this.on('resize', this.resize);
   }
@@ -175,6 +181,8 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
       this.$img.on('load', function () {
         $loader.replaceWith(self.$img);
         self.trigger('resize');
+
+        self.recreatePreviousState();
       });
 
       this.attachHotspots();
@@ -203,6 +211,13 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
 
       // Create new hotspot feedback
       self.createHotspotFeedback($(this), mouseEvent);
+
+      self.lastPosition = {
+        index: -1,
+        position: self.getRelativeClickPosition(mouseEvent)
+      };
+
+      self.trigger('kllStoreSessionState', undefined, { bubbles: true, external: true });
     });
   };
 
@@ -211,7 +226,8 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
    */
   ImageHotspotQuestion.prototype.attachHotspots = function () {
     const self = this;
-    this.hotspotSettings.hotspot.forEach(function (hotspot) {
+    this.hotspotSettings.hotspot.forEach(function (hotspot, index) {
+      hotspot.index = index;
       self.attachHotspot(hotspot);
     });
   };
@@ -234,8 +250,15 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
         return false;
       }
 
+      self.lastPosition = {
+        index: hotspot.index,
+        position: self.getRelativeClickPosition(mouseEvent)
+      };
+
       // Create new hotspot feedback
       self.createHotspotFeedback($(this), mouseEvent, hotspot);
+
+      self.trigger('kllStoreSessionState', undefined, { bubbles: true, external: true });
 
       // Do not propagate
       return false;
@@ -247,13 +270,108 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
   };
 
   /**
+   * Update last position that was clicked at.
+   * @param {MouseEvent} mouseEvent Mouse event.
+   * @return {object} X and y coordinates on image as percentage [0-1].
+   */
+  ImageHotspotQuestion.prototype.getRelativeClickPosition = function (mouseEvent) {
+    const offset = this.$img.offset();
+
+    return {
+      x: (mouseEvent.pageX - offset.left) / this.$img.width(),
+      y: (mouseEvent.pageY - offset.top) / this.$img.height()
+    };
+  };
+
+  /**
+   * Get Mouse Click event for position.
+   * @param {object} position Position.
+   * @param {number} position.x X coordinates on image as percentage [0-1].
+   * @param {number} position.y Y coordinates on image as percentage [0-1].
+   * @param {HTMLElement} target Target.
+   * @return {MouseEvent} Mouse event.
+   */
+  ImageHotspotQuestion.prototype.getMouseClickEvent = function (position, target) {
+    const offset = this.$img.offset();
+
+    const event = new $.Event('click');
+    event.pageX = position.x * this.$img.width() + offset.left;
+    event.clientX = event.pageX;
+    event.pageY = position.y * this.$img.height() + offset.top;
+    event.clientY = event.pageY;
+    event.target = target;
+
+    return event;
+  };
+
+  /**
+   * Get current state.
+   * @return {object} Current state.
+   */
+  ImageHotspotQuestion.prototype.getCurrentState = function () {
+    const index = this.lastPosition.index;
+    if (typeof index !== 'number') {
+      return {}; // Nothing chosen
+    }
+
+    const popupOpen = this.$wrapper.parent().find('.h5p-question-feedback.h5p-question-visible.h5p-question-popup').length !== 0;
+
+    if (
+      this.hotspotSettings.showFeedbackAsPopup && popupOpen === false &&
+      (index === -1 || !this.hotspotSettings.hotspot[index].userSettings.correct)
+    ) {
+      return {}; // Popup was closed, nothing visible
+    }
+
+    return {
+      index: this.lastPosition.index,
+      position: this.lastPosition.position,
+      popupOpen: this.$wrapper.parent().find('.h5p-question-feedback.h5p-question-visible.h5p-question-popup').length !== 0
+    };
+  };
+
+  /**
+   * Recreate previous state.
+   */
+  ImageHotspotQuestion.prototype.recreatePreviousState = function () {
+    if (!this.previousState || !this.previousState.position || typeof this.previousState.index !== 'number') {
+      return;
+    }
+
+    const index = this.previousState.index;
+
+    if (index > -1) {
+      // Was a hotspot
+      this.createHotspotFeedback(
+        this.$hotspots[index],
+        this.getMouseClickEvent(
+          this.previousState.position,
+          this.$hotspots[index].get(0)
+        ),
+        this.hotspotSettings.hotspot[index],
+        { skipXAPI: true }
+      );
+    }
+    else {
+      // Was not a hotspot
+      this.$imageWrapper.trigger(
+        this.getMouseClickEvent(this.previousState.position)
+      );
+    }
+
+    this.lastPosition = this.previousState;
+  };
+
+  /**
    * Create a feedback element for a click.
    * @param {H5P.jQuery} $clickedElement The element that was clicked, a hotspot or the image wrapper.
    * @param {Object} mouseEvent Mouse event containing mouse offsets within clicked element.
    * @param {Object} hotspot Hotspot parameters.
+   * @param {object} params Extra parameters.
    */
-  ImageHotspotQuestion.prototype.createHotspotFeedback = function ($clickedElement, mouseEvent, hotspot) {
+  ImageHotspotQuestion.prototype.createHotspotFeedback = function ($clickedElement, mouseEvent, hotspot, params) {
     const that = this;
+    params = params || {};
 
     // Do not create new hotspot if one exists
     if (this.hotspotFeedback.hotspotChosen) {
@@ -316,6 +434,13 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
 
     this.setFeedback(feedbackText, this.score, this.maxScore, this.params.scoreBarLabel, undefined, popupSettings);
 
+    // Too bad the popup doesn't use a callback
+    if (this.previousState && this.previousState.popupOpen === false) {
+      this.$wrapper.parent().find('.h5p-question-feedback.h5p-question-visible.h5p-question-popup .h5p-question-feedback-close').click();
+      delete this.previousState.popupOpen;
+    }
+
+
     // Finally add fade in animation to hotspot feedback
     this.hotspotFeedback.$element.addClass('fade-in');
 
@@ -331,8 +456,10 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
       }, 1000); // Allow results to display
     }
 
-    // Trigger xAPI completed event
-    this.trigger(this.getXAPIAnswerEvent());
+    if (!params.skipXAPI) {
+      // Trigger xAPI completed event
+      this.trigger(this.getXAPIAnswerEvent());
+    }
   };
 
   /**
@@ -447,6 +574,10 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
     this.disabled = false;
 
     this.answerGiven = false;
+
+    this.lastPosition = {};
+
+    this.trigger('kllStoreSessionState', undefined, { bubbles: true, external: true });
   };
 
   /**
