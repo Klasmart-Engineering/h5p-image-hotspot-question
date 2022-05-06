@@ -1,4 +1,3 @@
-/*global H5P*/
 H5P.ImageHotspotQuestion = (function ($, Question) {
 
   /**

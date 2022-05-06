@@ -7,6 +7,6 @@ var H5PPresave = H5PPresave || {};
  * @param finished
  * @constructor
  */
-H5PPresave['H5P.ImageHotspotQuestion'] = function(content, finished) {
-  finished({maxScore: 1});
+H5PPresave['H5P.ImageHotspotQuestion'] = function (content, finished) {
+  finished({ maxScore: 1 });
 };
