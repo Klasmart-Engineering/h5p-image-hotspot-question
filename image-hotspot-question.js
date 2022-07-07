@@ -159,6 +159,7 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
     this.$wrapper.ready(function () {
       const imageHeight = self.$wrapper.width() * (self.imageSettings.height / self.imageSettings.width);
       self.$wrapper.css('height', imageHeight + 'px');
+      self.$introduction = self.$wrapper.closest('.h5p-container').find('.h5p-question-introduction');
     });
 
     if (this.imageSettings && this.imageSettings.path) {
@@ -654,6 +655,21 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
    * Resize image and wrapper
    */
   ImageHotspotQuestion.prototype.resize = function () {
+    // Try to detect limit imposed by KLL platform
+    let displayLimits = (
+      this.isRoot() &&
+      H5P.KLDisplay && H5P.KLDisplay.computeDisplayLimitsKLL
+    ) ?
+      H5P.KLDisplay.computeDisplayLimitsKLL(this.$container.get(0)) :
+      null;
+
+    if (displayLimits) {
+      this.$wrapper.css('max-height', displayLimits.height + 'px');
+    }
+    else {
+      this.$wrapper.css('max-height', '');
+    }
+
     this.resizeImage();
     this.resizeHotspotFeedback();
   };
@@ -669,14 +685,23 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
       return;
     }
 
-    // Resize image to fit new container width.
-    const parentWidth = this.$wrapper.width();
-    this.$img.width(parentWidth);
-
     // Find required height for new width.
     const naturalWidth = this.$img.get(0).naturalWidth;
     const naturalHeight = this.$img.get(0).naturalHeight;
     const imageRatio = naturalHeight / naturalWidth;
+
+    const introductionHeight = this.$introduction ?
+      this.$introduction.outerHeight(true) :
+      0;
+
+    // Resize image to fit new container width.
+    const maxHeight = this.$wrapper.css('max-height') === 'none' ?
+      Infinity :
+      parseFloat(this.$wrapper.css('max-height')) - introductionHeight;
+
+    const parentWidth = Math.min(maxHeight / imageRatio, this.$wrapper.width());
+    this.$img.width(parentWidth);
+
     let neededHeight = -1;
     if (parentWidth < naturalWidth) {
       // Scale image down
