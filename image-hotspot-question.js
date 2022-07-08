@@ -660,7 +660,7 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
       this.isRoot() &&
       H5P.KLDisplay && H5P.KLDisplay.computeDisplayLimitsKLL
     ) ?
-      H5P.KLDisplay.computeDisplayLimitsKLL(this.$container.get(0)) :
+      H5P.KLDisplay.computeDisplayLimitsKLL(this.$wrapper.closest('.h5p-container').get(0)) :
       null;
 
     if (displayLimits) {
