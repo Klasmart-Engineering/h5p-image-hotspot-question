@@ -159,6 +159,7 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
     this.$wrapper.ready(function () {
       const imageHeight = self.$wrapper.width() * (self.imageSettings.height / self.imageSettings.width);
       self.$wrapper.css('height', imageHeight + 'px');
+      self.$questionButtons = self.$wrapper.closest('.h5p-container').find('.h5p-question-buttons');
     });
 
     if (this.imageSettings && this.imageSettings.path) {
@@ -410,11 +411,9 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
       this.hotspotFeedback.$element.addClass('correct');
       this.finishQuestion();
     }
-    else {
-      // Wrong answer, show retry button
-      if (this.params.behaviour.enableRetry) {
-        this.showButton('retry-button');
-      }
+
+    if (this.params.behaviour.enableRetry) {
+      this.showButton('retry-button');
     }
 
     let feedbackText;
@@ -433,6 +432,18 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
     };
 
     this.setFeedback(feedbackText, this.score, this.maxScore, this.params.scoreBarLabel, undefined, popupSettings);
+
+    /*
+     * The popup buttons are controlled by H5P.Question, we need to attach them
+     * to the popup and show the, ourselves for correctly answered questions.
+     */
+    if (
+      hotspot && hotspot.userSettings.correct &&
+      this.params.imageHotspotQuestion.hotspotSettings.showFeedbackAsPopup
+    ) {
+      const $popupFeedback = this.$wrapper.parent().find('.h5p-question-feedback');
+      that.$questionButtons.appendTo($popupFeedback).show();
+    }
 
     // Too bad the popup doesn't use a callback
     if (this.previousState && this.previousState.popupOpen === false) {
