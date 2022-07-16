@@ -664,13 +664,20 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
       null;
 
     if (displayLimits) {
+      this.$wrapper.parent().css('max-width', '');
       this.$wrapper.css('max-height', displayLimits.height + 'px');
     }
     else {
       this.$wrapper.css('max-height', '');
+      this.$wrapper.parent().css('max-width', '');
     }
 
     this.resizeImage();
+
+    if (displayLimits && this.$img.outerWidth() > 0) {
+      this.$wrapper.parent().css('max-width', this.$img.outerWidth() + 'px');
+    }
+
     this.resizeHotspotFeedback();
   };
 
@@ -690,7 +697,7 @@ H5P.ImageHotspotQuestion = (function ($, Question) {
     const naturalHeight = this.$img.get(0).naturalHeight;
     const imageRatio = naturalHeight / naturalWidth;
 
-    const introductionHeight = this.$introduction ?
+    const introductionHeight = this.$introduction && this.$introduction.length  ?
       this.$introduction.outerHeight(true) :
       0;
 
